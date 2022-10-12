@@ -1,0 +1,20 @@
+name = "TFHE"
+uuid = "4bccc524-91da-45f4-9b13-e6dcce9f8221"
+authors = ["Bogdan Opanchuk <bogdan@opanchuk.net>"]
+version = "0.1.0"
+
+[deps]
+DarkIntegers = "95d18f7b-8dde-4426-a3cb-b3b9e7df9890"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
+
+[extras]
+Jute = "82bedeac-9837-5b62-883a-b5b3b7c811c5"
+
+[targets]
+test = ["Jute"]
+
+[compat]
+julia = "^1.0.0"
+DarkIntegers = "~0.1.0"
