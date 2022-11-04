@@ -31,7 +31,7 @@ To run the test code for Our MK-TFHE scheme, type the following commands in the 
 
 <pre>
 <code>
-julia multikey.jl
+julia multikey_new.jl
 </code>
 </pre>
 
