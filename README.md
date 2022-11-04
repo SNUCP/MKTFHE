@@ -7,11 +7,7 @@ This implementation is a proof-of-concept for new multi-key TFHE scheme (https:/
 
 For the sake of performance, Float64 is used instead of Double64 when multiplying polynomials with 64 bit coefficients, but the option can be manually turned on in the file "polynomials.jl".
 
-To run the test code for CCS, type julia multikey.jl to the terminal.
-To run the test code for Our MK-TFHE scheme, type julia multikey_new.jl to the terminal.
-To run the fast implementation of Our MK-TFHE scheme, type julia multikey_new_fast.jl to the terminal.
-
-Please make sure to install the following packages : GenericFFT, Polynomials, DarkIntegers, DoubleFloats.
+Before you run the code, please make sure to install the following packages : GenericFFT, Polynomials, DarkIntegers, DoubleFloats.
 To install them, you can open the REPL and type the following commands.
 
 <pre>
@@ -20,5 +16,29 @@ To install them, you can open the REPL and type the following commands.
 add GenericFFT
 add DarkIntegers
 add DoubleFloats
+</code>
+</pre>
+
+To run the test code for CCS, type the following commands in the terminal.
+
+<pre>
+<code>
+julia multikey.jl
+</code>
+</pre>
+
+To run the test code for Our MK-TFHE scheme, type the following commands in the terminal.
+
+<pre>
+<code>
+julia multikey.jl
+</code>
+</pre>
+
+To run the test code for the fast implementation of Our MK-TFHE scheme, type the following commands in the terminal.
+
+<pre>
+<code>
+julia multikey_new_fast.jl
 </code>
 </pre>
