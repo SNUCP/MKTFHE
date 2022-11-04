@@ -10,3 +10,15 @@ For the sake of performance, Float64 is used instead of Double64 when multiplyin
 To run the test code for CCS, type julia multikey.jl to the terminal.
 To run the test code for Our MK-TFHE scheme, type julia multikey_new.jl to the terminal.
 To run the fast implementation of Our MK-TFHE scheme, type julia multikey_new_fast.jl to the terminal.
+
+Please make sure to install the following packages : GenericFFT, Polynomials, DarkIntegers, DoubleFloats.
+To install them, you can open the REPL and type the following commands.
+
+<pre>
+<code>
+]
+add GenericFFT
+add DarkIntegers
+add DoubleFloats
+</code>
+</pre>
