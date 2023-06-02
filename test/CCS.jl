@@ -1,4 +1,5 @@
-using MKTFHE, Printf
+include("../src/MKTFHE.jl")
+using .MKTFHE, Printf
 
 function main()
     params = CCS2party

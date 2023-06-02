@@ -1,4 +1,4 @@
-# TFHE
+# MKTFHE
 
 This implementation is a proof-of-concept for new multi-key TFHE scheme (https://eprint.iacr.org/2022/1460).
 
@@ -20,22 +20,24 @@ To run the test code for CCS, type the following commands in the terminal.
 
 <pre>
 <code>
-julia CCS.jl
+julia ./test/CCS.jl
 </code>
 </pre>
 
-To run the test code for Our MK-TFHE scheme, type the following commands in the terminal.
+To run the test code for our MK-TFHE scheme, type the following commands in the terminal.
 
 <pre>
 <code>
-julia KMS.jl
+julia ./test/KMS.jl
 </code>
 </pre>
 
-To run the test code for the parallelized version of Our MK-TFHE scheme, type the following commands in the terminal.
+To run the test code for the parallelized version of our MK-TFHE scheme, type the following commands in the terminal.
 
 <pre>
 <code>
-julia --threads=auto KMS.jl
+julia --threads=auto ./test/KMS.jl
 </code>
 </pre>
+
+This code also provides the implementation of CGGI scheme and LMSS(Faster TFHE bootstrapping from Block Binary Distribution) scheme.

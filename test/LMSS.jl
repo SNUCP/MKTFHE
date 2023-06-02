@@ -1,4 +1,5 @@
-using MKTFHE, Printf
+include("../src/MKTFHE.jl")
+using .MKTFHE, Printf
 
 function main()
     params = Blockparam
@@ -13,7 +14,7 @@ function main()
 
     gates = [(NAND, (x, y) -> x⊼y, "⊼ "), (AND, (x, y) -> x&y, "& "), (OR, (x, y) -> x||y, "|| "), (XOR, (x, y) -> x⊻y, "⊻ "), (XNOR, (x, y) -> !(x⊻y), "XNOR "), (NOR, (x, y) -> x⊽y, "NOR ")]
 
-    for idx = 1 : 10
+    for idx = 1 : 5
         m = rand(Bool, 4)
         ctxts = map(i -> lwe_encrypt(m[i], lwekey, params), 1:4)
         res = ctxts[1]
