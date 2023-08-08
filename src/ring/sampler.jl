@@ -25,7 +25,7 @@ gaussian(N::Int64, σ::Float64) =
     σ * randn(RandomDevice(), Float64, N)
 
 uniform_random32(N::Int64) =
-    UInt32.(round.(rand(RandomDevice(), N) * (1 << 32)))
+    round.(UInt32, rand(RandomDevice(), N) * (1 << 32))
 
 uniform_random64(N::Int64) =
-    UInt64.(round.(rand(RandomDevice(), BigFloat, N) * (Int128(1) << 64)))
+    round.(UInt64, rand(RandomDevice(), BigFloat, N) * (Int128(1) << 64))

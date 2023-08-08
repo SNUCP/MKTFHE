@@ -1,9 +1,9 @@
 abstract type RingPoly{T<:Unsigned} <: AbstractVector{T} end
 abstract type TransPoly{T} <: AbstractVector{T} end
 
-mutable struct NativePoly{T} <: RingPoly{T}
+struct NativePoly{T} <: RingPoly{T}
     coeffs::Vector{T}
-    const N::Int64
+    N::Int64
 end
 
 add(x::NativePoly, y::NativePoly) = begin
@@ -51,11 +51,10 @@ randnativepoly(N::Integer, T::Type) =
 buffnativepoly(N::Integer, T::Type) =
     NativePoly(Vector{T}(undef, N), N)
 
-# Changing TransNativePoly to immutable struct gives 5~7% of performance raise, with 3x allocations.
-# Julia allows mutating a Vector inside the immutable instances.
-mutable struct TransNativePoly{T<:AbstractFloat} <: TransPoly{T}
+# Changing TransNativePoly to mutable struct reduces allocations by a factor of three.
+struct TransNativePoly{T<:AbstractFloat} <: TransPoly{T}
     coeffs::Vector{Complex{T}}
-    const N::Int64
+    N::Int64
 end
 
 add(x::TransNativePoly, y::TransNativePoly) = begin

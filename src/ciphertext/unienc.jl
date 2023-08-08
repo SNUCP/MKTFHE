@@ -45,7 +45,7 @@ function unienc_encrypt(ta::TransCRS{S}, m::T, key::Unikey{T}, σ::Float64, ffte
         d[i] = ifft(tdi, ffter)
         d[i].coeffs[1] += m * params.gvec[i]
         @inbounds @simd for j = 1 : key.N
-            d[i].coeffs[j] += unsigned(signed(T)(round.(gaussian(σ))))
+            d[i].coeffs[j] += unsigned(round.(signed(T), gaussian(σ)))
         end
     end
 
@@ -65,7 +65,7 @@ function unienc_encrypt(ta::TransCRS{S}, m::NativePoly{T}, key::Unikey{T}, σ::F
         multo!(tdi, ta[i], r.tkey[1])
         d[i] = ifft(tdi, ffter)
         @inbounds @simd for j = 1 : key.N
-            d[i].coeffs[j] += m.coeffs[j] * params.gvec[i] + unsigned(signed(T)(round.(gaussian(σ))))
+            d[i].coeffs[j] += m.coeffs[j] * params.gvec[i] + unsigned(round.(signed(T), gaussian(σ)))
         end
     end
 
@@ -83,7 +83,7 @@ function gen_b(ta::TransCRS{S}, key::Unikey{T}, σ::Float64, ffter::FFTransforme
         mulsubto!(tbi, key.tkey[1], ta[i])
         b[i] = ifft(tbi, ffter)
         @inbounds @simd for j = 1 : N
-            b[i].coeffs[j] += unsigned(signed(T)(round(gaussian(σ))))
+            b[i].coeffs[j] += unsigned(round(signed(T), gaussian(σ)))
         end
     end
     b

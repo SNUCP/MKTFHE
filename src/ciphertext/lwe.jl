@@ -9,7 +9,7 @@ mutable struct LWE{T<:Unsigned}
 end
 
 LWEsample(key::LWEkey{T}, σ::Float64) where T = begin
-    e = unsigned(signed(T)(round(gaussian(σ))))
+    e = unsigned(round(signed(T), gaussian(σ)))
     a = rand(RandomDevice(), T, key.n)
     b = T(-reduce(+, a .* key.key) + e)
     LWE(b, a)
@@ -87,7 +87,7 @@ function RLWEsample(key::RLWEkey{T}, σ::Float64, ffter::FFTransformer{S}) where
     end
     ifftto!(b, tb, ffter)
     @inbounds @simd for i = 1 : N
-        b.coeffs[i] += unsigned(trunc(signed(T), round(gaussian(σ))))
+        b.coeffs[i] += unsigned(round(signed(T), gaussian(σ)))
     end
     RLWE(b, a)
 end
