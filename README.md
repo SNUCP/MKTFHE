@@ -1,5 +1,9 @@
 # MKTFHE
 
+<p align="center">
+	<img src="logo.png" width="600px"> 
+</p>
+
 This implementation is a proof-of-concept for new multi-key TFHE scheme (https://eprint.iacr.org/2022/1460).
 
 For the sake of performance, Float64 is used instead of multi precision floating number when multiplying polynomials with 64 bit coefficients, but the option can be manually turned on when defining the parameters.
