@@ -116,3 +116,40 @@ struct BootKey_KMS{T, R, S} <: BootKey where {T<:Unsigned, R<:Unsigned, S<:Abstr
         new{T, R, S}(b, brk, rlk, ksk, gswpar, levpar, unipar)
     end
 end
+
+struct BootKey_KMS_block{T, R, S} <: BootKey where {T<:Unsigned, R<:Unsigned, S<:AbstractFloat}
+    b::Vector{TransNativePoly{S}}
+    ℓ::Int64
+    d::Int64
+    brk::Vector{TransRGSW{S}}
+    rlk::TransUniEnc{S}
+    ksk::Array{LEV{T}, 2}
+    gswpar::GSWparams_digit{R}
+    levpar::LEVparams_digit{R}
+    unipar::Uniparams_digit{R}
+
+    function BootKey_KMS_block(lwekey::LWEkey{T}, gswkey::RLWEkey{R}, unikey::RLWEkey{R}, kskpar::LEVparams_digit, α::Float64, 
+                         levpar::LEVparams_digit{R}, gswpar::GSWparams_digit{R}, β::Float64, a::CRS, unipar::Uniparams_digit{R}, 
+                         ffter_keygen::FFTransformer{U}, ffter::FFTransformer{S}, ℓ::Int64, d::Int64) where {T, R, U, S}
+        n, N, D = lwekey.n, gswkey.N, 1 << kskpar.logB
+
+        ta = fft.(a, Ref(ffter_keygen))
+        b = fft.(gen_b(ta, unikey, β, ffter_keygen, unipar), Ref(ffter))
+
+        brk = Vector{TransRGSW{S}}(undef, n)
+        rlk = fft(unienc_encrypt(ta, gswkey.key[1], unikey, β, ffter_keygen, unipar), ffter)
+        ksk = Array{LEV{T}, 2}(undef, D÷2, N)
+    
+        @threads for i = 1 : n
+            brk[i] = fft(rgsw_encrypt(R(lwekey.key[i]), gswkey, β, ffter_keygen, gswpar), ffter)
+        end
+
+        @threads for i = n+1 : N
+            @inbounds @simd for j = 1 : D÷2
+                ksk[j, i] = lev_encrypt(T(unikey.key[1].coeffs[i] * j), lwekey, α, kskpar)
+            end
+        end
+    
+        new{T, R, S}(b, ℓ, d, brk, rlk, ksk, gswpar, levpar, unipar)
+    end
+end

@@ -76,6 +76,30 @@ struct KMSparams{T, R, U, S} <: MKTFHEparams{R, U, S} where {T<:Unsigned}
     k::Int64            # number of the parties 
 end
 
+# T is unsigned for LWE, R is unsigned for RLWE and U, S are Float for FFT opertaions in KeyGen and BlindRotate, respectively.
+struct KMSparams_block{T, R, U, S} <: MKTFHEparams{R, U, S} where {T<:Unsigned}
+    d::Int64        # number of the blocks
+    ℓ::Int64        # length of each block
+    α::Float64      # LWE noise standard deviation
+    
+    f::Int64        # key-switching gadget length
+    logD::Int64     # key-switching gadget size
+
+    N::Int64        # RLWE dimension
+    β::Float64      # RLWE noise standard deviation
+    
+    l_gsw::Int64    # blind-rotation gadget length
+    logB_gsw::Int64 # blind-rotation gadget size
+    
+    l_lev::Int64        # LEV gadget length
+    logB_lev::Int64     # LEV gadget size
+
+    l_uni::Int64        # UniEnc gadget length
+    logB_uni::Int64     # UniEnc gadget size
+
+    k::Int64            # number of the parties 
+end
+
 abstract type TFHEscheme{T<:Unsigned, S<:AbstractFloat} end
 
 abstract type SKscheme{T, S} <: TFHEscheme{T, S} end
@@ -227,7 +251,9 @@ function setup(a::CRS, btk::Vector{BootKey_CCS{T, S}}, params::CCSparams{T, R, S
     CCS{T, S}(k, n, N, fft.(a, Ref(ffter)), kskpar, unipar, ffter, monomial, btk)
 end
 
-struct KMS{T, R, S} <: MKscheme{R, S} where T
+abstract type KMSScheme{T, R, S} <: MKscheme{R, S} where T end
+
+struct KMS{T, R, S} <: KMSScheme{T, R, S}
     k::Int64
     n::Int64
     N::Int64
@@ -272,6 +298,57 @@ function setup(a::CRS, btk::Vector{BootKey_KMS{T, R, S}}, params::KMSparams{T, R
     KMS{T, R, S}(k, n, N, fft(a, ffter), kskpar, ffter, monomial, btk)
 end
 
+struct KMS_block{T, R, S} <: KMSScheme{T, R, S}
+    k::Int64
+    ℓ::Int64
+    d::Int64
+    n::Int64
+    N::Int64
+    a::TransCRS{S}
+    kskpar::LEVparams_digit{T}
+    ffter::FFTransformer{S}
+    monomial::Vector{TransNativePoly{S}}
+    btk::Vector{BootKey_KMS_block{T, R, S}}
+end
+
+keygen_params(params::KMSparams_block{T, R, U, S}, ffter::FFTransformer{U}) where {T, R, U, S} = begin
+    lwekey = block_binary_lwekey(params.d, params.ℓ, T)
+    gswkey = binary_ringkey(1, params.N, R, ffter)
+    unikey = partial_ringkey(1, params.N, R, lwekey, ffter)
+    lwekey, gswkey, unikey
+end
+
+"""
+party_keygen outputs LWE key, RLWE key, and party-wise bootstrapping key.
+"""
+function party_keygen(a::CRS, params::KMSparams_block{T, R, U, S}) where {T, R, U, S}
+    N = params.N
+
+    kskpar = LEVparams_digit{T}(params.f, params.logD)
+    gswpar = GSWparams_digit{R}(1, params.l_gsw, params.logB_gsw)
+    levpar = LEVparams_digit{R}(params.l_lev, params.logB_lev)
+    unipar = Uniparams_digit{R}(1, params.l_uni, params.logB_uni)
+
+    ffter_keygen = FFTransformer{U}(N, bits(R))
+    ffter = FFTransformer{S}(N, bits(R))
+
+    lwekey, gswkey, unikey = keygen_params(params, ffter_keygen)
+
+    lwekey, gswkey, unikey, BootKey_KMS_block(lwekey, gswkey, unikey, kskpar, params.α, levpar, gswpar, params.β, a, unipar, ffter_keygen, ffter, params.ℓ, params.d)
+end
+
+"""
+setup outputs Scheme.
+"""
+function setup(a::CRS, btk::Vector{BootKey_KMS_block{T, R, S}}, params::KMSparams_block{T, R, U, S}) where {T, R, U, S}
+    k, ℓ, d, N = params.k, params.ℓ, params.d, params.N
+    ffter = FFTransformer{S}(N, bits(R))
+    kskpar = LEVparams_digit{T}(params.f, params.logD)
+    monomial = getmonomial(T, ffter)
+
+    KMS_block{T, R, S}(k, ℓ, d, ℓ * d, N, fft(a, ffter), kskpar, ffter, monomial, btk)
+end
+
 function lwe_encrypt(m::Integer, key::LWEkey{T}, params::TFHEparams_bin) where T
     n = params.n
     b = unsigned(round(signed(T), gaussian(params.α)))
@@ -290,6 +367,15 @@ function lwe_encrypt(m::Integer, key::LWEkey{T}, params::TFHEparams_block) where
     LWE(b, a)
 end
 
+function lwe_ith_encrypt(m::Integer, i::Int64, key::LWEkey{T}, params::KMSparams_block) where T
+    n = params.ℓ * params.d
+    b = unsigned(round(signed(T), gaussian(params.α)))
+    a = vcat(zeros(T, n * (i-1)), rand(RandomDevice(), T, n), zeros(T, n * (params.k-i)))
+    μ = T(2) * T(m) - T(1)
+    b += T(-reduce(+, a[n*(i-1)+1:n*i] .* key.key) + μ << (bits(T) - 3))
+    LWE(b, a)
+end
+
 function lwe_ith_encrypt(m::Integer, i::Int64, key::LWEkey{T}, params::MKTFHEparams) where T
     n = params.n
     b = unsigned(round(signed(T), gaussian(params.α)))
@@ -302,6 +388,15 @@ end
 lwe_decrypt(lwe::LWE{T}, key::LWEkey{T}) where T = 
     divbits(lwe.b + reduce(+, key.key .* lwe.a), bits(T) - 3) == 1
 
+function lwe_decrypt(lwe::LWE{T}, keys::Vector{LWEkey{T}}, params::KMSparams_block) where T
+    b, n = lwe.b, params.ℓ * params.d
+    for i = eachindex(keys)
+        b += reduce(+, keys[i].key .* lwe.a[(i-1)*n+1:i*n])
+    end
+
+    b < (T(1) << (bits(T) - 1))
+end
+    
 function lwe_decrypt(lwe::LWE{T}, keys::Vector{LWEkey{T}}, params::MKTFHEparams) where T
     b, n = lwe.b, params.n
     for i = eachindex(keys)

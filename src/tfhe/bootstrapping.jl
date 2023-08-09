@@ -190,9 +190,9 @@ function keyswitch!(res::LWE{T}, acc::RLWE{T}, scheme::LMSS{T, S}) where {T, S}
                 res.a[current+j] = T(0) - acc.a[i].coeffs[N-j+1]
             end
 
-            @simd for idx = n-current+2 : N
+            @inbounds @simd for idx = n-current+2 : N
                 decompto!(ajdec, T(0) - acc.a[i].coeffs[N - idx + 2], scheme.kskpar)
-                @simd for j = 1 : l
+                @inbounds @simd for j = 1 : l
                     if signed(ajdec[j]) > 0
                         add!(res, scheme.btk.ksk[ajdec[j], idx, i].stack[j])
                     elseif ajdec[j] != 0
@@ -366,7 +366,7 @@ end
 """
 Blind Rotation algorithm based on our scheme.
 """
-function blindrotate!(tildeavec::Vector{T}, acc::RLWE{R}, scheme::KMS{T, R, S}) where {T, R, S}
+function blindrotate!(tildeavec::Vector{T}, acc::RLWE{R}, scheme::KMSScheme{T, R, S}) where {T, R, S}
     tildea = reshape(tildeavec, scheme.n, scheme.k)
     
     k = scheme.k
@@ -445,7 +445,7 @@ end
 """
 Phase 2 from Blind Rotation of our scheme.
 """
-function phase_2!(levkey::Vector{TransRLEV{S}}, acc::RLWE{R}, scheme::KMS{T, R, S}) where {T, R, S}
+function phase_2!(levkey::Vector{TransRLEV{S}}, acc::RLWE{R}, scheme::KMSScheme{T, R, S}) where {T, R, S}
     k, N = scheme.k, scheme.N
     
     levpar, unipar = scheme.btk[1].levpar, scheme.btk[1].unipar
@@ -465,7 +465,7 @@ function phase_2!(levkey::Vector{TransRLEV{S}}, acc::RLWE{R}, scheme::KMS{T, R, 
     y = RLWE(buffnativepoly(N, R), [buffnativepoly(N, R) for _ = 1 : k])
     ty = TransRLWE(bufftransnativepoly(N, S), [bufftransnativepoly(N, S) for _ = 1 : k])
 
-    for idx = 1 : k
+    @inbounds for idx = 1 : k
         # decompose b and ai of acc
         decompto!(bvec, acc.b, levpar)
         decomptoith!(avec, acc.a, idx-1, levpar)
@@ -584,6 +584,107 @@ function keyswitch!(res::LWE{T}, acc::RLWE{R}, scheme::KMS{T, R, S}) where {T, R
             @inbounds @simd for idx = eachindex(ajdec)
                 if ajdec[idx] > 0
                     add!(partctxt[i], scheme.btk[i].ksk[ajdec[idx], j].stack[idx])
+                end
+            end
+        end
+
+        res.b += partctxt[i].b
+        @. res.a[(i-1)*n+1:i*n] += partctxt[i].a
+    end
+end
+
+"""
+Phase 1 from Blind Rotation of KMS with block binary keys.
+"""
+function phase_1(party::Int64, tildea::Vector{T}, btk::BootKey_KMS_block{T, R, S}, monomial::Vector{TransNativePoly{S}}, ffter::FFTransformer{S}) where {T, R, S}
+    N = ffter.N
+
+    bvec = [buffnativepoly(N, R) for _ = 1 : btk.gswpar.l]
+    avec = [buffnativepoly(N, R) for _ = 1 : btk.gswpar.l]
+    tbvec = [bufftransnativepoly(N, S) for _ = 1 : btk.gswpar.l]
+    tavec = [bufftransnativepoly(N, S) for _ = 1 : btk.gswpar.l]
+
+    # For party 1, we don't need to perform blind rotation on RLEV ciphertext.
+    # This implementation may lead to a bigger noise variance, rather than performing blind rotation with test vector.
+    # We implement phase 1 this way to keep the code simpler.
+    iter = party == 1 ? 1 : btk.levpar.l
+
+    stack = Vector{RLWE{R}}(undef, iter)
+    @inbounds @simd for i = 1 : iter
+        stack[i] = RLWE(zeronativepoly(N, R), zeronativepoly(N, R))
+        stack[i].b.coeffs[1] = btk.levpar.gvec[i]
+    end
+    acc = RLEV(stack)
+    acc2 = RLEV(deepcopy(stack))
+    tacc = fft(acc, ffter)
+    tacc2 = deepcopy(tacc)
+
+    # Basically the same code to blind rotation of LMSS, but for each row of the RLEV ciphertext.
+    @inbounds for idx1 = 0 : btk.d-1
+        @inbounds @simd for i = 1 : iter
+            decompto!(bvec, acc.stack[i].b, btk.gswpar)
+            decompto!(avec, acc.stack[i].a[1], btk.gswpar)
+
+            @inbounds @simd for j = eachindex(bvec)
+                fftto!(tbvec[j], bvec[j], ffter)
+            end
+            @inbounds @simd for j = eachindex(avec)
+                fftto!(tavec[j], avec[j], ffter)
+            end
+
+            initialise!(tacc2.stack[i])
+            for idx2 = 1 : btk.ℓ
+                idx = idx1 * btk.ℓ + idx2
+                if tildea[idx] > 0     
+                    initialise!(tacc.stack[i])
+
+                    @inbounds for j = eachindex(bvec)
+                        muladdto!(tacc.stack[i], tbvec[j], btk.brk[idx].basketb.stack[j])
+                    end
+                    @inbounds for j = eachindex(avec)
+                        muladdto!(tacc.stack[i], tavec[j], btk.brk[idx].basketa[1].stack[j])
+                    end
+
+                    muladdto!(tacc2.stack[i], monomial[tildea[idx]], tacc.stack[i])
+                end
+            end
+        end
+
+        ifftto!(acc2, tacc2, ffter)
+        add!(acc, acc2)
+    end
+
+    fftto!(tacc, acc, ffter)
+    tacc
+end
+
+"""
+Key-switch algorithm for KMS with block binary keys.
+"""
+function keyswitch!(res::LWE{T}, acc::RLWE{R}, scheme::KMS_block{T, R, S}) where {T, R, S}
+    n, N, k, l = scheme.n, scheme.N, scheme.k, scheme.kskpar.l
+
+    bitdiff = bits(R) - bits(T)
+    initialise!(res)
+    res.b = T(acc.b.coeffs[1] >> bitdiff)
+
+    partctxt = [LWE(zero(T), zeros(T, n)) for _ = 1 : k]
+
+    @threads for i = 1 : k
+        ajdec = Vector{T}(undef, l)
+
+        partctxt[i].a[1] = T(acc.a[i].coeffs[1] >> bitdiff)
+        @inbounds @simd for j = 2 : n
+            partctxt[i].a[j] = T(0) - T(acc.a[i].coeffs[N-j+2] >> bitdiff)
+        end
+
+        @inbounds @simd for j = n+1 : N
+            decompto!(ajdec, T(0) - T(acc.a[i].coeffs[N - j + 2] >> bitdiff), scheme.kskpar)
+            @inbounds @simd for idx = eachindex(ajdec)
+                if signed(ajdec[idx]) > 0
+                    add!(partctxt[i], scheme.btk[i].ksk[ajdec[idx], j].stack[idx])
+                elseif ajdec[idx] != 0
+                    sub!(partctxt[i], scheme.btk[i].ksk[-signed(ajdec[idx]), j].stack[idx])
                 end
             end
         end

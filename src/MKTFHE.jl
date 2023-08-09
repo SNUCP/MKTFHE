@@ -32,5 +32,6 @@ include("tfhe/params.jl")
 export CGGIparam, Blockparam
 export CCS2party, CCS4party, CCS8party, CCS16party
 export KMS2party, KMS4party, KMS8party, KMS16party, KMS32party
+export KMS2partyblock, KMS4partyblock, KMS8partyblock, KMS16partyblock, KMS32partyblock
 
 end
