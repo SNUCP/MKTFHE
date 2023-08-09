@@ -2,7 +2,7 @@ include("../src/MKTFHE.jl")
 using .MKTFHE, Printf
 
 function main()
-    params = KMS16partyblock
+    params = KMS2partyblock
     a = CRS(params)
 
     @printf("KEY GENERATION ...\n")
