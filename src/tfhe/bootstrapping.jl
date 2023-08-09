@@ -213,7 +213,7 @@ function keyswitch!(res::LWE{T}, acc::RLWE{T}, scheme::LMSS{T, S}) where {T, S}
             end
 
             @inbounds @simd for idx = 2 : N
-                unbalanceddecompto!(ajdec, T(0) - acc.a[i].coeffs[N - idx + 2], scheme.kskpar)
+                decompto!(ajdec, T(0) - acc.a[i].coeffs[N - idx + 2], scheme.kskpar)
                 @inbounds @simd for j = 1 : l
                     if signed(ajdec[j]) > 0
                         add!(res, scheme.btk.ksk[ajdec[j], idx, i].stack[j])
