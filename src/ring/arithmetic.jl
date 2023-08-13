@@ -1,14 +1,25 @@
-@inline native(x::Float64, mask::T) where {T<:Unsigned} = begin
+@inline native(x::Float64, mask::UInt32) = begin
     if x == .0
-        zero(T)
+        0x00000000
     else
-        shift = exponent(x) - 52
-        if shift ≥ 0 
-            x > 0 ? T(((reinterpret(UInt64, x) & 0x000fffffffffffff + 0x0010000000000000) << shift) & mask) :
-                   -T(((reinterpret(UInt64, x) & 0x000fffffffffffff + 0x0010000000000000) << shift) & mask)
+        x -= floor(x * 2.3283064365386963e-10) * 4.294967296e9
+        if x == 4.294967296e9
+            0x00000000
         else
-            x > 0 ? T(((reinterpret(UInt64, x) & 0x000fffffffffffff + 0x0010000000000000) >> -shift) & mask) :
-                   -T(((reinterpret(UInt64, x) & 0x000fffffffffffff + 0x0010000000000000) >> -shift) & mask)
+            round(UInt32, x)
+        end
+    end
+end
+
+@inline native(x::Float64, mask::UInt64) = begin
+    if x == .0
+        0x0000000000000000
+    else
+        x -= floor(x * 5.421010862427522e-20) * 1.8446744073709552e19
+        if x == 1.8446744073709552e19
+            0x00000000
+        else
+            round(UInt64, x)
         end
     end
 end

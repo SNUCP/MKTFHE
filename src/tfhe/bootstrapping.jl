@@ -386,7 +386,7 @@ end
 """
 Phase 1 from Blind Rotation of our scheme.
 """
-function phase_1(party::Integer, tildea::Vector{T}, btk::BootKey_KMS{T, R, S}, monomial::Vector{TransNativePoly{S}}, ffter::FFTransformer{S}) where {T, R, S}
+function phase_1(party::Int64, tildea::Vector{T}, btk::BootKey_KMS{T, R, S}, monomial::Vector{TransNativePoly{S}}, ffter::FFTransformer{S}) where {T, R, S}
     N = ffter.N
 
     bvec = [buffnativepoly(N, R) for _ = 1 : btk.gswpar.l]

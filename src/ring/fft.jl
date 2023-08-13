@@ -16,14 +16,14 @@ end
 
 # For reasons unknown, making FFTransformer mutable and setting every value it holds constant reduces a lot of allocations. 
 mutable struct FFTransformer{T}
-    const N::Integer
+    const N::Int64
     const Ψ::Vector{Complex{T}}
     const Ψinv::Vector{Complex{T}}
     const roots::Vector{Complex{T}}
     const rootsinv::Vector{Complex{T}}
     const mask::Union{UInt32, UInt64}
 
-    function FFTransformer{T}(N::Integer, bits::Integer) where {T<:AbstractFloat}
+    function FFTransformer{T}(N::Int64, bits::Int64) where {T<:AbstractFloat}
         @assert bits == 32 || bits == 64
 
         mask = bits == 32 ? 0xffffffff : 0xffffffffffffffff

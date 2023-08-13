@@ -42,13 +42,13 @@ Base.:*(x::T, p::NativePoly{T}) where {T<:Unsigned} =
 initialise!(p::NativePoly{T}) where {T<:Unsigned} = 
     @. p.coeffs = zero(T)
 
-zeronativepoly(N::Integer, T::Type) = 
+zeronativepoly(N::Int64, T::Type) = 
     NativePoly(zeros(T, N), N)
 
-randnativepoly(N::Integer, T::Type) =
+randnativepoly(N::Int64, T::Type) =
     NativePoly(rand(T, N), N)
 
-buffnativepoly(N::Integer, T::Type) =
+buffnativepoly(N::Int64, T::Type) =
     NativePoly(Vector{T}(undef, N), N)
 
 # Changing TransNativePoly to mutable struct reduces allocations by a factor of three.
@@ -115,11 +115,11 @@ end
 initialise!(p::TransNativePoly{T}) where {T<:AbstractFloat} = 
     @. p.coeffs = 0
 
-zerotransnativepoly(N::Integer, T::Type) = 
+zerotransnativepoly(N::Int64, T::Type) = 
     TransNativePoly(zeros(Complex{T}, N÷2), N)
 
-randtransnativepoly(N::Integer, T::Type) =
+randtransnativepoly(N::Int64, T::Type) =
     TransNativePoly(rand(Complex{T}, N÷2), N)
 
-bufftransnativepoly(N::Integer, T::Type) =
+bufftransnativepoly(N::Int64, T::Type) =
     TransNativePoly(Vector{Complex{T}}(undef, N÷2), N)
