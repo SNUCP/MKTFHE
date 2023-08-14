@@ -7,7 +7,11 @@ end
 @inline native(x::Float64, mask::UInt64) = begin
     x = round(x)
     x -= floor(x * 5.421010862427522e-20) * 1.8446744073709552e19
-    round(UInt64, x)
+    if x == 1.8446744073709552e19
+        zero(UInt64)
+    else
+        round(UInt64, x)
+    end
 end
 
 @inline native(x::MultiFloat{Float64, l}, mask::T) where {T<:Unsigned, l} = begin
