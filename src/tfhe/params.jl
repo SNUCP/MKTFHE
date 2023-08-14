@@ -48,7 +48,7 @@ KMS2party = KMSparams{UInt32, UInt64, Float64x2, Float64}(
     560, 1 << 17,
     8, 2,
     1 << 11, 85.4084,
-    3, 13, 2, 7, 3, 10,
+    3, 12, 2, 7, 3, 10,
     2
 )
 
@@ -80,7 +80,7 @@ KMS32party = KMSparams{UInt32, UInt64, Float64x2, Float64}(
     560, 1 << 17,
     8, 2,
     1 << 11, 85.4084,
-    6, 8, 3, 7, 16, 2,
+    6, 7, 3, 7, 16, 2,
     32
 )
 
@@ -88,7 +88,7 @@ KMS2partyblock = KMSparams_block{UInt32, UInt64, Float64x2, Float64}(
     203, 3, 1 << 17,
     8, 2,
     1 << 11, 85.4084,
-    3, 13, 2, 7, 3, 10,
+    3, 12, 2, 7, 3, 10,
     2
 )
 
@@ -120,6 +120,6 @@ KMS32partyblock = KMSparams_block{UInt32, UInt64, Float64x2, Float64}(
     203, 3, 1 << 17,
     8, 2,
     1 << 11, 85.4084,
-    6, 8, 3, 7, 16, 2,
+    6, 7, 3, 7, 16, 2,
     32
 )
