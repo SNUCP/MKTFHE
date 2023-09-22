@@ -1,13 +1,11 @@
 @inline native(x::Float64, mask::UInt32) = begin
-    x = round(x)
     x -= floor(x * 2.3283064365386963e-10) * 4.294967296e9
-    round(UInt32, x)
+    unsafe_trunc(UInt32, x)
 end
 
-@inline native(x::Float64, mask::UInt64) = begin
-    x = round(x)
+@inline native(x::Float64, mask::UInt64)::UInt64 = begin
     x -= floor(x * 5.421010862427522e-20) * 1.8446744073709552e19
-    round(UInt64, x)
+    unsafe_trunc(UInt64, x)
 end
 
 @inline native(x::MultiFloat{Float64, l}, mask::T) where {T<:Unsigned, l} = begin
