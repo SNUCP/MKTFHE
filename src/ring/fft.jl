@@ -80,30 +80,9 @@ function ifftto!(p::NativePoly, t::TransNativePoly, ffter::FFTransformer{T}) whe
     @. p.coeffs[halfN+1:end] = native(-imag(t.coeffs), ffter.mask)
 end
 
-# Cooley-Tukey over C[X]/(Xᴺ+1).
-# Based on https://eprint.iacr.org/2016/504
-# Note : I implemented several FFT algorithms, but this negacyclic version without bit-reversal was the most performant.
-function fft!(a::Vector{T}, Ψ::Vector{T}) where {T<:Number}
-    N = length(a)
-
-    m = 1
-    logkp1 = trailing_zeros(N)
-    k = N >> 1
-    while logkp1 > 0
-        @inbounds @simd for i = 0 : m-1
-            j1 = i << logkp1 + 1; j2 = j1 + k - 1
-            @inbounds @simd for j = j1 : j2
-                t, u = a[j], Ψ[m+i+1] * a[j+k]
-                a[j], a[j+k] = t + u, t - u
-            end
-        end
-        m <<= 1; logkp1 -= 1; k >>= 1
-    end
-end
-
 # Gentleman-Sande over C[X]/(Xᴺ+1).
 # Based on https://eprint.iacr.org/2016/504
-function ifft!(a::Vector{T}, Ψinv::Vector{T}) where {T<:Number}
+function ifft!(a::Vector{T}, Ψinv::Vector{T}) where {T<:Complex{<:AbstractFloat}}
     N = length(a)
 
     m = N >> 1
@@ -118,5 +97,114 @@ function ifft!(a::Vector{T}, Ψinv::Vector{T}) where {T<:Number}
             end
         end
         m >>= 1; logkp1 += 1; k <<= 1
+    end
+end
+
+# Cooley-Tukey.
+# Based on https://eprint.iacr.org/2016/504
+function fft!(a::Vector{T}, Ψ::Vector{T}) where {T<:Complex{<:AbstractFloat}}
+    N = length(a)
+
+    m, logkp1, k = 1, trailing_zeros(N), N >> 1
+
+    @inbounds @simd for j = 1 : k
+        t, u = a[j], a[j+k] * Ψ[2]
+        a[j], a[j+k] = t + u, t - u
+    end
+    m <<= 1; logkp1 -= 1; k >>= 1
+
+    while logkp1 > 3
+        for i = 0 : m-1
+            j1 = i << logkp1 + 1; j2 = j1 + k - 1
+            for j = j1 : 8 : j2
+                t1, t2, t3, t4, t5, t6, t7, t8 = a[j], a[j+1], a[j+2], a[j+3], a[j+4], a[j+5], a[j+6], a[j+7]
+                u1, u2, u3, u4 = a[j+k] * Ψ[m+i+1], a[j+k+1] * Ψ[m+i+1], a[j+k+2] * Ψ[m+i+1], a[j+k+3] * Ψ[m+i+1]
+                u5, u6, u7, u8 = a[j+k+4] * Ψ[m+i+1], a[j+k+5] * Ψ[m+i+1], a[j+k+6] * Ψ[m+i+1], a[j+k+7] * Ψ[m+i+1]
+                a[j], a[j+1], a[j+2], a[j+3], a[j+4], a[j+5], a[j+6], a[j+7] = t1 + u1, t2 + u2, t3 + u3, t4 + u4, t5 + u5, t6 + u6, t7 + u7, t8 + u8
+                a[j+k], a[j+k+1], a[j+k+2], a[j+k+3], a[j+k+4], a[j+k+5], a[j+k+6], a[j+k+7] = t1 - u1, t2 - u2, t3 - u3, t4 - u4, t5 - u5, t6 - u6, t7 - u7, t8 - u8
+            end
+        end
+        m <<= 1; logkp1 -= 1; k >>= 1
+    end
+
+    if logkp1 == 3
+        @inbounds @simd for i = 0 : m-1
+            j = i << 3 + 1
+            t1, t2, t3, t4, u1, u2, u3, u4 = a[j], a[j+1], a[j+2], a[j+3], a[j+k] * Ψ[m+i+1], a[j+k+1] * Ψ[m+i+1], a[j+k+2] * Ψ[m+i+1], a[j+k+3] * Ψ[m+i+1]
+            a[j], a[j+1], a[j+2], a[j+3], a[j+k], a[j+k+1], a[j+k+2], a[j+k+3] = t1 + u1, t2 + u2, t3 + u3, t4 + u4, t1 - u1, t2 - u2, t3 - u3, t4 - u4
+        end
+        m <<= 1; logkp1 -= 1; k >>= 1
+    end
+
+    if logkp1 == 2
+        @inbounds @simd for i = 0 : m-1
+            j = i << 2 + 1
+            t1, t2, u1, u2 = a[j], a[j+1], a[j+k] * Ψ[m+i+1], a[j+k+1] * Ψ[m+i+1]
+            a[j], a[j+1], a[j+k], a[j+k+1] = t1 + u1, t2 + u2, t1 - u1, t2 - u2
+        end
+        m <<= 1; logkp1 -= 1; k >>= 1
+    end
+
+    if logkp1 == 1
+        @inbounds @simd for i = 0 : m-1
+            j = i << 1 + 1
+            t, u = a[j], a[j+k] * Ψ[m+i+1]
+            a[j], a[j+k] = t + u, t - u
+        end
+    end
+end
+
+# Gentleman-Sande.
+# Based on https://eprint.iacr.org/2016/504
+function ifft!(a::Vector{T}, Ψinv::Vector{T}) where {T<:Complex{<:AbstractFloat}}
+    N = length(a)
+
+    m, logkp1, k = N >> 1, 1, 1
+
+    @inbounds @simd for i = 0 : m - 1
+        j = i << 1 + 1
+        t, u = a[j], a[j+k]
+        a[j], a[j+k] = t + u, (t - u) * Ψinv[m+i+1]
+    end
+    m >>= 1; logkp1 += 1; k <<= 1
+
+    if m > 0 
+        @inbounds @simd for i = 0 : m - 1
+            j = i << 2 + 1
+            t1, t2, u1, u2 = a[j], a[j+1], a[j+k], a[j+k+1]
+            a[j], a[j+1], a[j+k], a[j+k+1] = t1 + u1, t2 + u2, (t1-u1) * Ψinv[m+i+1], (t2-u2) * Ψinv[m+i+1]          
+        end
+        m >>= 1; logkp1 += 1; k <<= 1
+    end
+
+    if m > 0 
+        @inbounds @simd for i = 0 : m - 1
+            j = i << 3 + 1
+            t1, t2, t3, t4, u1, u2, u3, u4 = a[j], a[j+1], a[j+2], a[j+3], a[j+k], a[j+k+1], a[j+k+2], a[j+k+3]
+            a[j], a[j+1], a[j+2], a[j+3], a[j+k], a[j+k+1], a[j+k+2], a[j+k+3] = t1 + u1, t2 + u2, t3 + u3, t4 + u4, (t1-u1) * Ψinv[m+i+1], (t2-u2) * Ψinv[m+i+1], (t3-u3) * Ψinv[m+i+1], (t4-u4) * Ψinv[m+i+1]
+        end
+        m >>= 1; logkp1 += 1; k <<= 1
+    end
+
+    while m > 1
+        @inbounds @simd for i = 0 : m - 1
+            j1 = i << logkp1 + 1; j2 = j1 + k - 1
+            @inbounds @simd for j = j1 : 8 : j2
+                t1, t2, t3, t4, t5, t6, t7, t8 = a[j], a[j+1], a[j+2], a[j+3], a[j+4], a[j+5], a[j+6], a[j+7]
+                u1, u2, u3, u4, u5, u6, u7, u8 = a[j+k], a[j+k+1], a[j+k+2], a[j+k+3], a[j+k+4], a[j+k+5], a[j+k+6], a[j+k+7]
+
+                a[j], a[j+1], a[j+2], a[j+3], a[j+4], a[j+5], a[j+6], a[j+7] = t1 + u1, t2 + u2, t3 + u3, t4 + u4, t5 + u5, t6 + u6, t7 + u7, t8 + u8
+                a[j+k], a[j+k+1], a[j+k+2], a[j+k+3] = (t1-u1) * Ψinv[m+i+1], (t2-u2) * Ψinv[m+i+1], (t3-u3) * Ψinv[m+i+1], (t4-u4) * Ψinv[m+i+1]
+                a[j+k+4], a[j+k+5], a[j+k+6], a[j+k+7] = (t5-u5) * Ψinv[m+i+1], (t6-u6) * Ψinv[m+i+1], (t7-u7) * Ψinv[m+i+1], (t8-u8) * Ψinv[m+i+1]
+            end
+        end
+        m >>= 1; logkp1 += 1; k <<= 1
+    end
+
+    if m > 0
+        @inbounds @simd for j = 1 : k
+            t, u = a[j], a[j+k]
+            a[j], a[j+k] = t + u, (t - u ) * Ψinv[2]
+        end
     end
 end

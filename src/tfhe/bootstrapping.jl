@@ -268,9 +268,9 @@ function blindrotate!(tildeavec::Vector{<:Unsigned}, acc::RLWE{T}, scheme::CCS{T
                 @inbounds @simd for j = 1 : param.l
                     fftto!(tbvec[j], bvec[j], scheme.ffter)
                 end
-                @inbounds @simd for j = 1 : idx
-                    @inbounds @simd for k = 1 : param.l 
-                        fftto!(tavec[k, j], avec[k, j], scheme.ffter)
+                @inbounds @simd for j1 = 1 : idx
+                    @inbounds @simd for j2 = 1 : param.l 
+                        fftto!(tavec[j2, j1], avec[j2, j1], scheme.ffter)
                     end
                 end
 
@@ -279,8 +279,8 @@ function blindrotate!(tildeavec::Vector{<:Unsigned}, acc::RLWE{T}, scheme::CCS{T
                 @inbounds for j = 1 : param.l
                     muladdto!(tacc.b, tbvec[j], scheme.btk[idx].brk[i].d[j])
                 end
-                @inbounds for j = 1 : idx, k = 1 : param.l
-                    muladdto!(tacc.a[j], tavec[k, j], scheme.btk[idx].brk[i].d[k])
+                @inbounds for j1 = 1 : idx, j2 = 1 : param.l
+                    muladdto!(tacc.a[j1], tavec[j2, j1], scheme.btk[idx].brk[i].d[j2])
                 end
 
                 # Compute v.
@@ -289,8 +289,8 @@ function blindrotate!(tildeavec::Vector{<:Unsigned}, acc::RLWE{T}, scheme::CCS{T
                 @inbounds for j = 1 : param.l
                     mulsubto!(tv0, tbvec[j], scheme.a[j])
                 end
-                @inbounds for j = 1 : idx, k = 1 : param.l
-                    muladdto!(tv[j], tavec[k, j], scheme.btk[j].b[k])
+                @inbounds for j1 = 1 : idx, j2 = 1 : param.l
+                    muladdto!(tv[j1], tavec[j2, j1], scheme.btk[j1].b[j2])
                 end
 
                 # Inverse transform tv to v.
@@ -305,8 +305,8 @@ function blindrotate!(tildeavec::Vector{<:Unsigned}, acc::RLWE{T}, scheme::CCS{T
                 @inbounds for j = 1 : param.l
                     fftto!(tv0vec[j], v0vec[j], scheme.ffter)
                 end 
-                @inbounds for j = 1 : idx, k = 1 : param.l
-                    fftto!(tvvec[k, j], vvec[k, j], scheme.ffter)
+                @inbounds for j1 = 1 : idx, j2 = 1 : param.l
+                    fftto!(tvvec[j2, j1], vvec[j2, j1], scheme.ffter)
                 end
 
                 # Compute w.
@@ -314,9 +314,9 @@ function blindrotate!(tildeavec::Vector{<:Unsigned}, acc::RLWE{T}, scheme::CCS{T
                     muladdto!(tacc.b, tv0vec[j], scheme.btk[idx].brk[i].f.stack[j].b)
                     muladdto!(tacc.a[idx], tv0vec[j], scheme.btk[idx].brk[i].f.stack[j].a[1])
                 end
-                @inbounds for j = 1 : idx, k = 1 : param.l
-                    muladdto!(tacc.b, tvvec[k, j], scheme.btk[idx].brk[i].f.stack[k].b)
-                    muladdto!(tacc.a[idx], tvvec[k, j], scheme.btk[idx].brk[i].f.stack[k].a[1])
+                @inbounds for j1 = 1 : idx, j2 = 1 : param.l
+                    muladdto!(tacc.b, tvvec[j2, j1], scheme.btk[idx].brk[i].f.stack[j2].b)
+                    muladdto!(tacc.a[idx], tvvec[j2, j1], scheme.btk[idx].brk[i].f.stack[j2].a[1])
                 end
 
                 mul!(scheme.monomial[tildea[i, idx]], tacc)
