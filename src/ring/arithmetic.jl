@@ -3,7 +3,7 @@
     unsafe_trunc(UInt32, x)
 end
 
-@inline native(x::Float64, mask::UInt64) = begin
+@inline native(x::Float64, mask::UInt64)::UInt64 = begin
     x -= floor(x * 5.421010862427522e-20) * 1.8446744073709552e19
     unsafe_trunc(UInt64, x)
 end
