@@ -1,6 +1,6 @@
 module MKTFHE
 
-using Random: RandomDevice
+using ChaChaCiphers: ChaCha20Stream
 using Base.Threads: @threads, @spawn, @sync
 using MultiFloats
 # MultiFloats package is the state-of-the-art multi-precision Julia package.

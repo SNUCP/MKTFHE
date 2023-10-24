@@ -10,7 +10,7 @@ end
 
 LWEsample(key::LWEkey{T}, σ::Float64) where T = begin
     e = unsigned(round(signed(T), gaussian(σ)))
-    a = rand(RandomDevice(), T, key.n)
+    a = rand(ChaCha20Stream(), T, key.n)
     b = T(-reduce(+, a .* key.key) + e)
     LWE(b, a)
 end

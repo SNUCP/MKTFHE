@@ -352,7 +352,7 @@ end
 function lwe_encrypt(m::Integer, key::LWEkey{T}, params::TFHEparams_bin) where T
     n = params.n
     b = unsigned(round(signed(T), gaussian(params.α)))
-    a = rand(RandomDevice(), T, n)
+    a = rand(ChaCha20Stream(), T, n)
     μ = T(2) * T(m) - T(1)
     b += T(-reduce(+, a .* key.key) + μ << (bits(T) - 3))
     LWE(b, a)
@@ -361,7 +361,7 @@ end
 function lwe_encrypt(m::Integer, key::LWEkey{T}, params::TFHEparams_block) where T
     n = params.ℓ * params.d
     b = unsigned(round(signed(T), gaussian(params.α)))
-    a = rand(RandomDevice(), T, n)
+    a = rand(ChaCha20Stream(), T, n)
     μ = T(2) * T(m) - T(1)
     b += T(-reduce(+, a .* key.key) + μ << (bits(T) - 3))
     LWE(b, a)
@@ -370,7 +370,7 @@ end
 function lwe_ith_encrypt(m::Integer, i::Int64, key::LWEkey{T}, params::KMSparams_block) where T
     n = params.ℓ * params.d
     b = unsigned(round(signed(T), gaussian(params.α)))
-    a = vcat(zeros(T, n * (i-1)), rand(RandomDevice(), T, n), zeros(T, n * (params.k-i)))
+    a = vcat(zeros(T, n * (i-1)), rand(ChaCha20Stream(), T, n), zeros(T, n * (params.k-i)))
     μ = T(2) * T(m) - T(1)
     b += T(-reduce(+, a[n*(i-1)+1:n*i] .* key.key) + μ << (bits(T) - 3))
     LWE(b, a)
@@ -379,7 +379,7 @@ end
 function lwe_ith_encrypt(m::Integer, i::Int64, key::LWEkey{T}, params::MKTFHEparams) where T
     n = params.n
     b = unsigned(round(signed(T), gaussian(params.α)))
-    a = vcat(zeros(T, n * (i-1)), rand(RandomDevice(), T, n), zeros(T, n * (params.k-i)))
+    a = vcat(zeros(T, n * (i-1)), rand(ChaCha20Stream(), T, n), zeros(T, n * (params.k-i)))
     μ = T(2) * T(m) - T(1)
     b += T(-reduce(+, a[n*(i-1)+1:n*i] .* key.key) + μ << (bits(T) - 3))
     LWE(b, a)

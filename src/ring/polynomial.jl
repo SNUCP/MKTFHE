@@ -46,7 +46,7 @@ zeronativepoly(N::Int64, T::Type) =
     NativePoly(zeros(T, N), N)
 
 randnativepoly(N::Int64, T::Type) =
-    NativePoly(rand(T, N), N)
+    NativePoly(rand(ChaCha20Stream(), T, N), N)
 
 buffnativepoly(N::Int64, T::Type) =
     NativePoly(Vector{T}(undef, N), N)
@@ -117,9 +117,6 @@ initialise!(p::TransNativePoly{T}) where {T<:AbstractFloat} =
 
 zerotransnativepoly(N::Int64, T::Type) = 
     TransNativePoly(zeros(Complex{T}, N÷2), N)
-
-randtransnativepoly(N::Int64, T::Type) =
-    TransNativePoly(rand(Complex{T}, N÷2), N)
 
 bufftransnativepoly(N::Int64, T::Type) =
     TransNativePoly(Vector{Complex{T}}(undef, N÷2), N)
