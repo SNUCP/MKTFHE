@@ -14,8 +14,7 @@ To install them, you can open the REPL and type the following commands.
 <pre>
 <code>
 ]
-add Random
-add Primes
+add ChaChaCiphers
 add MultiFloats
 </code>
 </pre>
