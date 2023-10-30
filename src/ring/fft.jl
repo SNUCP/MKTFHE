@@ -114,9 +114,9 @@ function fft!(a::Vector{T}, Ψ::Vector{T}) where {T<:Complex{<:AbstractFloat}}
     m <<= 1; logkp1 -= 1; k >>= 1
 
     while logkp1 > 3
-        for i = 0 : m-1
+        @inbounds @simd for i = 0 : m-1
             j1 = i << logkp1 + 1; j2 = j1 + k - 1
-            for j = j1 : 8 : j2
+            @inbounds @simd for j = j1 : 8 : j2
                 t1, t2, t3, t4, t5, t6, t7, t8 = a[j], a[j+1], a[j+2], a[j+3], a[j+4], a[j+5], a[j+6], a[j+7]
                 u1, u2, u3, u4 = a[j+k] * Ψ[m+i+1], a[j+k+1] * Ψ[m+i+1], a[j+k+2] * Ψ[m+i+1], a[j+k+3] * Ψ[m+i+1]
                 u5, u6, u7, u8 = a[j+k+4] * Ψ[m+i+1], a[j+k+5] * Ψ[m+i+1], a[j+k+6] * Ψ[m+i+1], a[j+k+7] * Ψ[m+i+1]
