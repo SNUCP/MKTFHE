@@ -8,7 +8,7 @@ This implementation is a proof-of-concept for new multi-key TFHE scheme (https:/
 
 For the sake of performance, Float64 is used instead of multi precision floating number when multiplying polynomials with 64 bit coefficients, but the option can be manually turned on when defining the parameters.
 
-Before you run the code, please make sure to install the following packages : Random, Primes, MultiFloats.
+Before you run the code, please make sure to install the following packages : ChaChaCiphers, MultiFloats.
 To install them, you can open the REPL and type the following commands.
 
 <pre>
